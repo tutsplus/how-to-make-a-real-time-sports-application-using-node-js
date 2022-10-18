@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Socket.IO Example</title>
+	</head>
+	<body>
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module">
+			import { html, render } from "https://esm.sh/htm/preact";
+			import { signal } from "https://esm.sh/@preact/signals";
+			const games = signal([]);
+			const socket = io();
+			socket.on("data", function (data) {
+				games.value = data;
+			});
+
+			function ordinalSuffix(input) {
+				const tenRemainder = input % 10,
+					hundredRemainer = input % 100;
+				if (tenRemainder == 1 && hundredRemainer != 11) {
+					return input + "st";
+				}
+				if (tenRemainder == 2 && hundredRemainer != 12) {
+					return input + "nd";
+				}
+				if (tenRemainder == 3 && hundredRemainer != 13) {
+					return input + "rd";
+				}
+				return input + "th";
+			}
+			function timeLeft(time) {
+				const minutes = Math.floor(time / 60);
+				const seconds = time - minutes * 60;
+
+				return minutes + ":" + ("0" + seconds).slice(-2);
+			}
+			function stats() {
+				return html`${games.value.forEach(
+					(game) =>
+						html`<div class="game">
+							<div>
+								${game.game.awayTeam.City} ${game.game.awayTeam.Name} at
+								${game.game.homeTeam.City} ${game.game.homeTeam.Name}
+							</div>
+							<div>
+								${(() => {
+									if (game.isUnplayed) {
+										return `Game Starts at ${game.game.time}`;
+									} else if (game.isCompleted === "false") {
+										return html`<div>
+												Current Score: ${game.awayScore} - ${game.homeScore}
+											</div>
+											<div>
+												${(() => {
+													if (game.currentIntermission) {
+														return `${ordinalPrefix(
+															game.currentIntermission
+														)} Intermission`;
+													} else if (game.currentPeriod) {
+														return html`${ordinalPrefix(
+																game.currentPeriod
+															)}<br />${timeLeft(
+																game.currentPeriodSecondsRemaining
+															)}`;
+													} else {
+														return `1st`;
+													}
+												})()}
+											</div>`;
+									} else {
+										return `Final Score: ${game.awayScore} - ${game.homeScore}`;
+									}
+								})()}
+							</div>
+						</div>`
+				)}`;
+			}
+			render(stats, document.getElementById("games"));
+		</script>
+		<div id="games"></div>
+	</body>
+</html>
